@@ -1,0 +1,5 @@
+﻿  MyVulkanApp.cpp
+LINK : warning LNK4098: defaultlib 'MSVCRT' conflicts with use of other libs; use /NODEFAULTLIB:library
+MyVulkanApp.obj : error LNK2019: unresolved external symbol _vkEnumerateInstanceExtensionProperties@12 referenced in function _main
+D:\Learning\vulkan\MyVulkanApp\\..\ExternalLibs\lib\vulkan-1.lib : warning LNK4272: library machine type 'x64' conflicts with target machine type 'x86'
+D:\Learning\vulkan\MyVulkanApp\Debug\MyVulkanApp.exe : fatal error LNK1120: 1 unresolved externals
