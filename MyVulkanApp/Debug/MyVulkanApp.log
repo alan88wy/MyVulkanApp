@@ -1,5 +1,37 @@
-﻿  MyVulkanApp.cpp
-LINK : warning LNK4098: defaultlib 'MSVCRT' conflicts with use of other libs; use /NODEFAULTLIB:library
-MyVulkanApp.obj : error LNK2019: unresolved external symbol _vkEnumerateInstanceExtensionProperties@12 referenced in function _main
-D:\Learning\vulkan\MyVulkanApp\\..\ExternalLibs\lib\vulkan-1.lib : warning LNK4272: library machine type 'x64' conflicts with target machine type 'x86'
-D:\Learning\vulkan\MyVulkanApp\Debug\MyVulkanApp.exe : fatal error LNK1120: 1 unresolved externals
+﻿  FirstApp.cpp
+  MyVulkanApp.cpp
+  Window.cpp
+  Generating Code...
+Window.obj : error LNK2019: unresolved external symbol _vkCreateInstance@12 referenced in function "private: void __thiscall Window::CreateInstance(void)" (?CreateInstance@Window@@AAEXXZ)
+Window.obj : error LNK2019: unresolved external symbol _vkDestroyInstance@8 referenced in function "public: void __thiscall Window::CleanUp(void)" (?CleanUp@Window@@QAEXXZ)
+Window.obj : error LNK2019: unresolved external symbol _vkEnumeratePhysicalDevices@12 referenced in function "private: void __thiscall Window::PickPhysicalDevice(void)" (?PickPhysicalDevice@Window@@AAEXXZ)
+Window.obj : error LNK2019: unresolved external symbol _vkGetPhysicalDeviceFeatures@8 referenced in function "private: int __thiscall Window::RateDeviceSuitability(struct VkPhysicalDevice_T *)" (?RateDeviceSuitability@Window@@AAEHPAUVkPhysicalDevice_T@@@Z)
+Window.obj : error LNK2019: unresolved external symbol _vkGetPhysicalDeviceProperties@8 referenced in function "private: int __thiscall Window::RateDeviceSuitability(struct VkPhysicalDevice_T *)" (?RateDeviceSuitability@Window@@AAEHPAUVkPhysicalDevice_T@@@Z)
+Window.obj : error LNK2019: unresolved external symbol _vkGetPhysicalDeviceQueueFamilyProperties@12 referenced in function "private: struct Window::QueueFamilyIndices __thiscall Window::FindQueueFamilies(struct VkPhysicalDevice_T *)const " (?FindQueueFamilies@Window@@ABE?AUQueueFamilyIndices@1@PAUVkPhysicalDevice_T@@@Z)
+Window.obj : error LNK2019: unresolved external symbol _vkGetInstanceProcAddr@8 referenced in function "private: enum VkResult __thiscall Window::CreateDebugUtilsMessengerEXT(struct VkInstance_T *,struct VkDebugUtilsMessengerCreateInfoEXT const *,struct VkAllocationCallbacks const *,unsigned __int64 *)" (?CreateDebugUtilsMessengerEXT@Window@@AAE?AW4VkResult@@PAUVkInstance_T@@PBUVkDebugUtilsMessengerCreateInfoEXT@@PBUVkAllocationCallbacks@@PA_K@Z)
+Window.obj : error LNK2019: unresolved external symbol _vkCreateDevice@16 referenced in function "private: void __thiscall Window::CreateLogicalDevice(void)" (?CreateLogicalDevice@Window@@AAEXXZ)
+Window.obj : error LNK2019: unresolved external symbol _vkDestroyDevice@8 referenced in function "public: void __thiscall Window::CleanUp(void)" (?CleanUp@Window@@QAEXXZ)
+Window.obj : error LNK2019: unresolved external symbol _vkEnumerateDeviceExtensionProperties@16 referenced in function "private: bool __thiscall Window::CheckDeviceExtensionSupport(struct VkPhysicalDevice_T *)" (?CheckDeviceExtensionSupport@Window@@AAE_NPAUVkPhysicalDevice_T@@@Z)
+Window.obj : error LNK2019: unresolved external symbol _vkEnumerateInstanceLayerProperties@8 referenced in function "private: bool __thiscall Window::CheckValidationLayerSupport(void)" (?CheckValidationLayerSupport@Window@@AAE_NXZ)
+Window.obj : error LNK2019: unresolved external symbol _vkGetDeviceQueue@16 referenced in function "private: void __thiscall Window::CreateLogicalDevice(void)" (?CreateLogicalDevice@Window@@AAEXXZ)
+Window.obj : error LNK2019: unresolved external symbol _vkDestroySurfaceKHR@16 referenced in function "public: void __thiscall Window::CleanUp(void)" (?CleanUp@Window@@QAEXXZ)
+Window.obj : error LNK2019: unresolved external symbol _vkGetPhysicalDeviceSurfaceSupportKHR@20 referenced in function "private: struct Window::QueueFamilyIndices __thiscall Window::FindQueueFamilies(struct VkPhysicalDevice_T *)const " (?FindQueueFamilies@Window@@ABE?AUQueueFamilyIndices@1@PAUVkPhysicalDevice_T@@@Z)
+Window.obj : error LNK2019: unresolved external symbol _vkGetPhysicalDeviceSurfaceCapabilitiesKHR@16 referenced in function "private: struct Window::SwapChainSupportDetails __thiscall Window::QuerySwapChainSupport(struct VkPhysicalDevice_T *)" (?QuerySwapChainSupport@Window@@AAE?AUSwapChainSupportDetails@1@PAUVkPhysicalDevice_T@@@Z)
+Window.obj : error LNK2019: unresolved external symbol _vkGetPhysicalDeviceSurfaceFormatsKHR@20 referenced in function "private: struct Window::SwapChainSupportDetails __thiscall Window::QuerySwapChainSupport(struct VkPhysicalDevice_T *)" (?QuerySwapChainSupport@Window@@AAE?AUSwapChainSupportDetails@1@PAUVkPhysicalDevice_T@@@Z)
+Window.obj : error LNK2019: unresolved external symbol _vkGetPhysicalDeviceSurfacePresentModesKHR@20 referenced in function "private: struct Window::SwapChainSupportDetails __thiscall Window::QuerySwapChainSupport(struct VkPhysicalDevice_T *)" (?QuerySwapChainSupport@Window@@AAE?AUSwapChainSupportDetails@1@PAUVkPhysicalDevice_T@@@Z)
+Window.obj : error LNK2019: unresolved external symbol _vkCreateSwapchainKHR@16 referenced in function "private: void __thiscall Window::CreateSwapChain(void)" (?CreateSwapChain@Window@@AAEXXZ)
+Window.obj : error LNK2019: unresolved external symbol _vkDestroySwapchainKHR@16 referenced in function "public: void __thiscall Window::CleanUp(void)" (?CleanUp@Window@@QAEXXZ)
+Window.obj : error LNK2019: unresolved external symbol _vkGetSwapchainImagesKHR@20 referenced in function "private: void __thiscall Window::CreateSwapChain(void)" (?CreateSwapChain@Window@@AAEXXZ)
+Window.obj : error LNK2019: unresolved external symbol _glfwInit referenced in function "public: int __thiscall Window::InitWindow(void)" (?InitWindow@Window@@QAEHXZ)
+Window.obj : error LNK2019: unresolved external symbol _glfwTerminate referenced in function "public: void __thiscall Window::CleanUp(void)" (?CleanUp@Window@@QAEXXZ)
+Window.obj : error LNK2019: unresolved external symbol _glfwWindowHint referenced in function "public: int __thiscall Window::InitWindow(void)" (?InitWindow@Window@@QAEHXZ)
+Window.obj : error LNK2019: unresolved external symbol _glfwCreateWindow referenced in function "public: int __thiscall Window::InitWindow(void)" (?InitWindow@Window@@QAEHXZ)
+Window.obj : error LNK2019: unresolved external symbol _glfwDestroyWindow referenced in function "public: void __thiscall Window::CleanUp(void)" (?CleanUp@Window@@QAEXXZ)
+Window.obj : error LNK2019: unresolved external symbol _glfwWindowShouldClose referenced in function "private: bool __thiscall Window::GetShouldClose(void)" (?GetShouldClose@Window@@AAE_NXZ)
+Window.obj : error LNK2019: unresolved external symbol _glfwGetFramebufferSize referenced in function "private: struct VkExtent2D __thiscall Window::ChooseSwapExtent(struct VkSurfaceCapabilitiesKHR const &)" (?ChooseSwapExtent@Window@@AAE?AUVkExtent2D@@ABUVkSurfaceCapabilitiesKHR@@@Z)
+Window.obj : error LNK2019: unresolved external symbol _glfwPollEvents referenced in function "public: void __thiscall Window::MainLoop(void)" (?MainLoop@Window@@QAEXXZ)
+Window.obj : error LNK2019: unresolved external symbol _glfwGetRequiredInstanceExtensions referenced in function "private: class std::vector<char const *,class std::allocator<char const *> > __thiscall Window::GetRequiredExtensions(void)" (?GetRequiredExtensions@Window@@AAE?AV?$vector@PBDV?$allocator@PBD@std@@@std@@XZ)
+Window.obj : error LNK2019: unresolved external symbol _glfwCreateWindowSurface referenced in function "private: void __thiscall Window::CreateSurface(void)" (?CreateSurface@Window@@AAEXXZ)
+${ProjectDir}\..\..\..\ExternalLibs\lib\Vulkan\vulkan-1.lib : warning LNK4272: library machine type 'x64' conflicts with target machine type 'x86'
+${ProjectDir}\..\..\..\ExternalLibs\lib\GLFW\glfw3.lib : warning LNK4272: library machine type 'x64' conflicts with target machine type 'x86'
+D:\Learning\vulkan\MyVulkanApp\Debug\MyVulkanApp.exe : fatal error LNK1120: 30 unresolved externals

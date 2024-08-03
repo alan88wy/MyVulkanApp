@@ -50,13 +50,15 @@ void Window::SetupDebugMessenger()
 
 	VkDebugUtilsMessengerCreateInfoEXT(createInfo);
 
-	if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger))
+	PopulateDebugMessengerCreateInfo(createInfo);
+
+	if (CreateDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to setup debug messenger");
 	}
 }
 
-std::vector<const char *> Window::GetRequiredExtensions()
+std::vector<const char*> Window::GetRequiredExtensions()
 {
 
 	uint32_t glfwExtensionCount = 0;
@@ -89,21 +91,23 @@ void Window::InitVulkan()
 
 	SetupDebugMessenger();
 
-	 CreateSurface();
+	CreateSurface();
 
 	PickPhysicalDevice();
 
 	CreateLogicalDevice();
+
+	CreateSwapChain();
 
 }
 
 void Window::PickPhysicalDevice()
 {
 	/*
-	* Listing the graphics cards is very similar to listing extensions 
+	* Listing the graphics cards is very similar to listing extensions
 	* and starts with querying just the number.
 	*/
-	
+
 	unsigned int deviceCount = 0;
 
 	vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr);
@@ -120,9 +124,9 @@ void Window::PickPhysicalDevice()
 	std::vector<VkPhysicalDevice> devices(deviceCount);
 
 	vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
-	
+
 	// And we'll check if any of the physical devices meet the requirements that we'll add to that function.
-	for (const auto& device: devices)
+	for (const auto& device : devices)
 	{
 		if (IsDeviceSuitable(device))
 		{
@@ -137,9 +141,9 @@ void Window::PickPhysicalDevice()
 	}
 
 	/*
-	* Instead of just checking if a device is suitable or not and going with the first one, 
-	* you could also give each device a score and pick the highest one. That way you could favor 
-	* a dedicated graphics card by giving it a higher score, but fall back to an integrated GPU if 
+	* Instead of just checking if a device is suitable or not and going with the first one,
+	* you could also give each device a score and pick the highest one. That way you could favor
+	* a dedicated graphics card by giving it a higher score, but fall back to an integrated GPU if
 	* that's the only available one. You could implement something like that as follows:
 	*/
 
@@ -165,7 +169,7 @@ void Window::PickPhysicalDevice()
 }
 
 int Window::RateDeviceSuitability(VkPhysicalDevice device) {
-	
+
 	VkPhysicalDeviceProperties deviceProperties;
 	VkPhysicalDeviceFeatures deviceFeatures;
 	vkGetPhysicalDeviceProperties(device, &deviceProperties);
@@ -189,11 +193,37 @@ int Window::RateDeviceSuitability(VkPhysicalDevice device) {
 	return score;
 }
 
+bool Window::CheckDeviceExtensionSupport(VkPhysicalDevice device) {
+
+	uint32_t extensionCount;
+	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+	std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+	vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+	std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+
+	for (const auto& extension : availableExtensions) {
+		requiredExtensions.erase(extension.extensionName);
+	}
+
+	return requiredExtensions.empty();
+}
+
 bool Window::IsDeviceSuitable(VkPhysicalDevice device)
 {
 	QueueFamilyIndices indices = FindQueueFamilies(device);
 
-	return indices.IsCompleted();
+	bool extensionsSupported = CheckDeviceExtensionSupport(device);
+
+	bool swapChainAdequate = false;
+
+	if (extensionsSupported) {
+		SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(device);
+		swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+	}
+
+	return indices.IsCompleted() && extensionsSupported && swapChainAdequate;
 
 	/*
 
@@ -204,44 +234,44 @@ bool Window::IsDeviceSuitable(VkPhysicalDevice device)
 
 	return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU &&
 		deviceFeatures.geometryShader;
-	
+
 	*/
 
 
 }
 
-Window::QueueFamilyIndices Window::FindQueueFamilies(VkPhysicalDevice device)
+Window::QueueFamilyIndices Window::FindQueueFamilies(VkPhysicalDevice device) const
 {
 	/*
-	* in Vulkan, anything from drawing to uploading textures, requires commands 
-	* to be submitted to a queue. There are different types of queues that originate 
-	* from different queue families and each family of queues allows only a subset of commands. 
-	* For example, there could be a queue family that only allows processing of compute commands 
+	* in Vulkan, anything from drawing to uploading textures, requires commands
+	* to be submitted to a queue. There are different types of queues that originate
+	* from different queue families and each family of queues allows only a subset of commands.
+	* For example, there could be a queue family that only allows processing of compute commands
 	* or one that only allows memory transfer related commands.
 	*
-	* We need to check which queue families are supported by the device and which one of these 
-	* supports the commands that we want to use. For that purpose we'll add a new function 
+	* We need to check which queue families are supported by the device and which one of these
+	* supports the commands that we want to use. For that purpose we'll add a new function
 	* findQueueFamilies that looks for all the queue families we need.
 	*/
-	
+
 	QueueFamilyIndices indices;
 
-	/* 
-	* The process of retrieving the list of queue families is exactly 
+	/*
+	* The process of retrieving the list of queue families is exactly
 	* what you expect and uses vkGetPhysicalDeviceQueueFamilyProperties:
 	*/
-	
+
 	unsigned int queueFamilyCount = 0;
 
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
 
 	std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
 
-	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data() );
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
 	/*
-	* The VkQueueFamilyProperties struct contains some details about the queue family, including 
-	* the type of operations that are supported and the number of queues that can be created based 
+	* The VkQueueFamilyProperties struct contains some details about the queue family, including
+	* the type of operations that are supported and the number of queues that can be created based
 	* on that family. We need to find at least one queue family that supports VK_QUEUE_GRAPHICS_BIT.
 	*/
 
@@ -278,33 +308,20 @@ void Window::CreateLogicalDevice()
 {
 
 	/*
-	* The creation of a logical device involves specifying a bunch of details in structs again, 
-	of which the first one will be VkDeviceQueueCreateInfo. This structure describes the number 
-	of queues we want for a single queue family. Right now we're only interested in a queue with 
+	* The creation of a logical device involves specifying a bunch of details in structs again,
+	of which the first one will be VkDeviceQueueCreateInfo. This structure describes the number
+	of queues we want for a single queue family. Right now we're only interested in a queue with
 	graphics capabilities.
 	*/
 
 	QueueFamilyIndices indices = FindQueueFamilies(physicalDevice);
 
 	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-	std::set<unsigned int> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};
-
-	VkDeviceQueueCreateInfo queueCreateInfo{};
-	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
+	std::set<unsigned int> uniqueQueueFamilies = { indices.graphicsFamily.value(), indices.presentFamily.value() };
 
 	/*
-	* The currently available drivers will only allow you to create a small number of queues for 
-	each queue family and you don't really need more than one. That's because you can create all 
-	of the command buffers on multiple threads and then submit them all at once on the main thread 
-	with a single low-overhead call.
-	*/
-
-	queueCreateInfo.queueCount = 1;
-
-	/*
-	* Vulkan lets you assign priorities to queues to influence the scheduling of command buffer 
-	execution using floating point numbers between 0.0 and 1.0. This is required even if there 
+	* Vulkan lets you assign priorities to queues to influence the scheduling of command buffer
+	execution using floating point numbers between 0.0 and 1.0. This is required even if there
 	is only a single queue:
 	*/
 
@@ -313,16 +330,15 @@ void Window::CreateLogicalDevice()
 	for (unsigned int queueFamily : uniqueQueueFamilies)
 	{
 		VkDeviceQueueCreateInfo queueCreateInfo{};
-		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		queueCreateInfo.queueFamilyIndex = queueFamily;
 		queueCreateInfo.queueCount = 1;
 		queueCreateInfo.pQueuePriorities = &queuePriority;
 		queueCreateInfos.push_back(queueCreateInfo);
 	}
 
-	 queueCreateInfo.pQueuePriorities = &queuePriority;
 
-	/* 
+	/*
 	Specifying used device features
 
 	These are the features that we queried support for with vkGetPhysicalDeviceFeatures.
@@ -336,12 +352,10 @@ void Window::CreateLogicalDevice()
 	*/
 
 	VkDeviceCreateInfo createInfo{};
-	//createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+
+	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
 	// First add pointers to the queue creation info and device features structs:
-
-	/*createInfo.pQueueCreateInfos = &queueCreateInfo;
-	createInfo.queueCreateInfoCount = 1;*/
 
 	createInfo.queueCreateInfoCount = static_cast<unsigned int>(queueCreateInfos.size());
 
@@ -351,11 +365,12 @@ void Window::CreateLogicalDevice()
 
 	/*
 	* specify extensions and validation layers. The difference is that these are device specific this time.
-	* An example of a device specific extension is VK_KHR_swapchain, which allows you to present rendered 
+	* An example of a device specific extension is VK_KHR_swapchain, which allows you to present rendered
 	* images from that device to windows.
 	*/
 
-	createInfo.enabledExtensionCount = 0;
+	createInfo.enabledExtensionCount = static_cast<unsigned int> (deviceExtensions.size());
+	createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
 	if (enableValidationLayers) {
 		createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
@@ -366,7 +381,7 @@ void Window::CreateLogicalDevice()
 	}
 
 	/*
-	* That's it, we're now ready to instantiate the logical device with a call to the appropriately named 
+	* That's it, we're now ready to instantiate the logical device with a call to the appropriately named
 	* vkCreateDevice function.
 	*/
 
@@ -375,8 +390,8 @@ void Window::CreateLogicalDevice()
 	}
 
 	/*
-	* We can use the vkGetDeviceQueue function to retrieve queue handles for each queue family. 
-	* The parameters are the logical device, queue family, queue index and a pointer to the variable to store 
+	* We can use the vkGetDeviceQueue function to retrieve queue handles for each queue family.
+	* The parameters are the logical device, queue family, queue index and a pointer to the variable to store
 	* the queue handle in. Because we're only creating a single queue from this family, we'll simply use index 0.
 	*/
 
@@ -387,11 +402,6 @@ void Window::CreateLogicalDevice()
 
 void Window::CreateSurface() {
 
-	 /*VkWin32SurfaceCreateInfoKHR createInfo{};
-	 createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-	 createInfo.hwnd = glfwGetWin32Window(mainWindow);
-	 createInfo.hinstance = GetModuleHandle(nullptr);*/
-
 	if (glfwCreateWindowSurface(instance, mainWindow, nullptr, &surface) != VK_SUCCESS) {
 		throw std::runtime_error("Failed to create window surface!");
 	}
@@ -399,10 +409,9 @@ void Window::CreateSurface() {
 
 void Window::CreateInstance()
 {
-	//
-	if (enableValidationLayers && !CheckValidationLayerSupport())
-	{
-		throw std::runtime_error("Validation layers requested but not available");
+
+	if (enableValidationLayers && !CheckValidationLayerSupport()) {
+		throw std::runtime_error("validation layers requested, but not available!");
 	}
 
 	// Now, to create an instance we'll first have to fill in a struct with some information about our application. 
@@ -455,8 +464,8 @@ void Window::CreateInstance()
 		throw std::runtime_error("Failed to create vulkan instance!");
 	}
 
-	/*
 
+	/*
 
 
 	glm::mat4 matrix;
@@ -466,6 +475,126 @@ void Window::CreateInstance()
 	*/
 
 }
+
+void Window::CreateSwapChain() {
+	SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(physicalDevice);
+
+	VkSurfaceFormatKHR surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.formats);
+	VkPresentModeKHR presentMode = ChooseSwapPresentMode(swapChainSupport.presentModes);
+	VkExtent2D extent = ChooseSwapExtent(swapChainSupport.capabilities);
+
+	uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
+
+	if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
+		imageCount = swapChainSupport.capabilities.maxImageCount;
+	}
+
+	VkSwapchainCreateInfoKHR createInfo{};
+	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	createInfo.surface = surface;
+
+	createInfo.minImageCount = imageCount;
+	createInfo.imageFormat = surfaceFormat.format;
+	createInfo.imageColorSpace = surfaceFormat.colorSpace;
+	createInfo.imageExtent = extent;
+	createInfo.imageArrayLayers = 1;
+	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+	QueueFamilyIndices indices = FindQueueFamilies(physicalDevice);
+	uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
+
+	if (indices.graphicsFamily != indices.presentFamily) {
+		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+		createInfo.queueFamilyIndexCount = 2;
+		createInfo.pQueueFamilyIndices = queueFamilyIndices;
+	}
+	else {
+		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	}
+
+	createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+	createInfo.presentMode = presentMode;
+	createInfo.clipped = VK_TRUE;
+
+	createInfo.oldSwapchain = VK_NULL_HANDLE;
+
+	if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
+		throw std::runtime_error("failed to create swap chain!");
+	}
+
+	vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
+	swapChainImages.resize(imageCount);
+	vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());
+
+	swapChainImageFormat = surfaceFormat.format;
+	swapChainExtent = extent;
+}
+
+VkSurfaceFormatKHR Window::ChooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
+	for (const auto& availableFormat : availableFormats) {
+		if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+			return availableFormat;
+		}
+	}
+
+	return availableFormats[0];
+}
+
+VkPresentModeKHR Window::ChooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
+	for (const auto& availablePresentMode : availablePresentModes) {
+		if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
+			return availablePresentMode;
+		}
+	}
+
+	return VK_PRESENT_MODE_FIFO_KHR;
+}
+
+VkExtent2D Window::ChooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
+	if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+		return capabilities.currentExtent;
+	}
+	else {
+		int width, height;
+		glfwGetFramebufferSize(mainWindow, &width, &height);
+
+		VkExtent2D actualExtent = {
+			static_cast<uint32_t>(width),
+			static_cast<uint32_t>(height)
+		};
+
+		actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+		actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+
+		return actualExtent;
+	}
+}
+
+Window::SwapChainSupportDetails Window::QuerySwapChainSupport(VkPhysicalDevice device) {
+	SwapChainSupportDetails details;
+
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+
+	uint32_t formatCount;
+	vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+
+	if (formatCount != 0) {
+		details.formats.resize(formatCount);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
+	}
+
+	uint32_t presentModeCount;
+	vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
+
+	if (presentModeCount != 0) {
+		details.presentModes.resize(presentModeCount);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
+	}
+
+	return details;
+}
+
 
 void Window::MainLoop()
 {
@@ -478,6 +607,7 @@ void Window::MainLoop()
 
 void Window::CleanUp()
 {
+	vkDestroySwapchainKHR(device, swapChain, nullptr);
 
 	vkDestroyDevice(device, nullptr);
 
@@ -494,12 +624,9 @@ void Window::CleanUp()
 
 	glfwTerminate();
 
-
-
-
 }
 
-VkResult Window::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, 
+VkResult Window::CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
 	const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
 {
 	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
@@ -554,6 +681,3 @@ bool Window::CheckValidationLayerSupport() {
 	return true;
 }
 
-Window::~Window()
-{
-}
