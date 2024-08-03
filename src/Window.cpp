@@ -45,20 +45,132 @@ namespace mge {
 		return EXIT_SUCCESS;
 	}
 
-	void MgeWindow::setupDebugMessenger()
+	void MgeWindow::initVulkan()
 	{
-		if (!enableValidationLayers) {
-			return;
-		}
+		createInstance();
 
-		VkDebugUtilsMessengerCreateInfoEXT(createInfo);
+		setupDebugMessenger();
 
-		populateDebugMessengerCreateInfo(createInfo);
+		createSurface();
 
-		if (createDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS)
+		pickPhysicalDevice();
+
+		createLogicalDevice();
+
+		createSwapChain();
+
+	}
+
+	void MgeWindow::mainLoop()
+	{
+
+		while (!getShouldClose())
 		{
-			throw std::runtime_error("Failed to setup debug messenger");
+			glfwPollEvents();
 		}
+	}
+
+	// Vulkan Initialization
+
+	// Create Instance
+
+	void MgeWindow::createInstance()
+	{
+
+		if (enableValidationLayers && !checkValidationLayerSupport()) {
+			throw std::runtime_error("validation layers requested, but not available!");
+		}
+
+		// Now, to create an instance we'll first have to fill in a struct with some information about our application. 
+
+		VkApplicationInfo appInfo{};
+
+		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+		appInfo.pApplicationName = "Hello Triangle";
+		appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+		appInfo.pEngineName = "SoSy Game Engine";
+		appInfo.engineVersion = VK_MAKE_VERSION(1, 3, 0);
+		appInfo.apiVersion = VK_API_VERSION_1_3;
+
+		// A lot of information in Vulkan is passed through structs instead of function parameters and we'll have to fill 
+		// in one more struct to provide sufficient information for creating an instance. This next struct is not optional 
+		// and tells the Vulkan driver which global extensions and validation layers we want to use. Global here means that 
+		// they apply to the entire program and not a specific device, which will become clear in the next few chapters.
+
+		VkInstanceCreateInfo createInfo{};
+
+		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+		createInfo.pApplicationInfo = &appInfo;
+
+		auto extensions = getRequiredExtensions();
+
+		createInfo.enabledExtensionCount = static_cast<unsigned int> (extensions.size());
+		createInfo.ppEnabledExtensionNames = extensions.data();
+
+		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
+
+		if (enableValidationLayers)
+		{
+			createInfo.enabledLayerCount = static_cast<uint32_t> (validationLayers.size());
+			createInfo.ppEnabledLayerNames = validationLayers.data();
+
+			populateDebugMessengerCreateInfo(debugCreateInfo);
+
+			createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
+		}
+		else
+		{
+			createInfo.enabledLayerCount = 0;
+			createInfo.pNext = nullptr;
+		}
+
+		// Create Instance
+
+		if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create vulkan instance!");
+		}
+
+
+		/*
+
+
+		glm::mat4 matrix;
+		glm::vec4 vec;
+		auto test = matrix * vec;
+
+		*/
+
+	}
+
+	bool MgeWindow::checkValidationLayerSupport() {
+
+		uint32_t layerCount;
+		vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
+
+		std::vector<VkLayerProperties> availableLayers(layerCount);
+		vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
+
+		for (const char* layerName : validationLayers)
+		{
+			bool layerFound = false;
+
+			for (const auto& layerProperties : availableLayers)
+			{
+				if (strcmp(layerName, layerProperties.layerName) == 0)
+				{
+					layerFound = true;
+					break;
+				}
+			}
+
+			if (!layerFound)
+			{
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	std::vector<const char*> MgeWindow::getRequiredExtensions()
@@ -88,21 +200,58 @@ namespace mge {
 		createInfo.pfnUserCallback = debugCallback;
 	}
 
-	void MgeWindow::initVulkan()
+	// Setup Debugger
+
+	void MgeWindow::setupDebugMessenger()
 	{
-		createInstance();
+		if (!enableValidationLayers) {
+			return;
+		}
 
-		setupDebugMessenger();
+		VkDebugUtilsMessengerCreateInfoEXT(createInfo);
 
-		createSurface();
+		populateDebugMessengerCreateInfo(createInfo);
 
-		pickPhysicalDevice();
-
-		createLogicalDevice();
-
-		createSwapChain();
-
+		if (createDebugUtilsMessengerEXT(instance, &createInfo, nullptr, &debugMessenger) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to setup debug messenger");
+		}
 	}
+
+	VkResult MgeWindow::createDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+		const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
+	{
+		auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+
+		if (func != nullptr)
+		{
+			return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+		}
+		else
+		{
+			return VK_ERROR_EXTENSION_NOT_PRESENT;
+		}
+	}
+
+	void MgeWindow::destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
+	{
+		auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "VkDestroyUtilsMessangerEXT");
+
+		if (func != nullptr)
+		{
+			func(instance, debugMessenger, pAllocator);
+		}
+	}
+
+	// Create Surface
+
+	void MgeWindow::createSurface() {
+
+		if (glfwCreateWindowSurface(instance, mainWindow, nullptr, &surface) != VK_SUCCESS) {
+			throw std::runtime_error("Failed to create window surface!");
+		}
+	}
+
 
 	void MgeWindow::pickPhysicalDevice()
 	{
@@ -171,48 +320,6 @@ namespace mge {
 
 	}
 
-	int MgeWindow::rateDeviceSuitability(VkPhysicalDevice device) {
-
-		VkPhysicalDeviceProperties deviceProperties;
-		VkPhysicalDeviceFeatures deviceFeatures;
-		vkGetPhysicalDeviceProperties(device, &deviceProperties);
-		vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
-
-		int score = 0;
-
-		// Discrete GPUs have a significant performance advantage
-		if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
-			score += 1000;
-		}
-
-		// Maximum possible size of textures affects graphics quality
-		score += deviceProperties.limits.maxImageDimension2D;
-
-		// Application can't function without geometry shaders
-		if (!deviceFeatures.geometryShader) {
-			return 0;
-		}
-
-		return score;
-	}
-
-	bool MgeWindow::checkDeviceExtensionSupport(VkPhysicalDevice device) {
-
-		uint32_t extensionCount;
-		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
-
-		std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
-
-		std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
-
-		for (const auto& extension : availableExtensions) {
-			requiredExtensions.erase(extension.extensionName);
-		}
-
-		return requiredExtensions.empty();
-	}
-
 	bool MgeWindow::isDeviceSuitable(VkPhysicalDevice device)
 	{
 		QueueFamilyIndices indices = findQueueFamilies(device);
@@ -243,68 +350,21 @@ namespace mge {
 
 	}
 
-	MgeWindow::QueueFamilyIndices MgeWindow::findQueueFamilies(VkPhysicalDevice device) const
-	{
-		/*
-		* in Vulkan, anything from drawing to uploading textures, requires commands
-		* to be submitted to a queue. There are different types of queues that originate
-		* from different queue families and each family of queues allows only a subset of commands.
-		* For example, there could be a queue family that only allows processing of compute commands
-		* or one that only allows memory transfer related commands.
-		*
-		* We need to check which queue families are supported by the device and which one of these
-		* supports the commands that we want to use. For that purpose we'll add a new function
-		* findQueueFamilies that looks for all the queue families we need.
-		*/
+	bool MgeWindow::checkDeviceExtensionSupport(VkPhysicalDevice device) {
 
-		QueueFamilyIndices indices;
+		uint32_t extensionCount;
+		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
 
-		/*
-		* The process of retrieving the list of queue families is exactly
-		* what you expect and uses vkGetPhysicalDeviceQueueFamilyProperties:
-		*/
+		std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
 
-		unsigned int queueFamilyCount = 0;
+		std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
 
-		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-
-		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-
-		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
-
-		/*
-		* The VkQueueFamilyProperties struct contains some details about the queue family, including
-		* the type of operations that are supported and the number of queues that can be created based
-		* on that family. We need to find at least one queue family that supports VK_QUEUE_GRAPHICS_BIT.
-		*/
-
-		int i = 0;
-
-		for (const auto& queueFamily : queueFamilies)
-		{
-			if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
-			{
-				indices.graphicsFamily = i;
-			}
-
-			VkBool32 presentSupport = false;
-
-			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
-
-			if (presentSupport)
-			{
-				indices.presentFamily = i;
-			}
-
-			if (indices.isCompleted())
-			{
-				break;
-			}
-
-			i++;
+		for (const auto& extension : availableExtensions) {
+			requiredExtensions.erase(extension.extensionName);
 		}
 
-		return indices;
+		return requiredExtensions.empty();
 	}
 
 	void MgeWindow::createLogicalDevice()
@@ -403,81 +463,71 @@ namespace mge {
 
 	}
 
-	void MgeWindow::createSurface() {
-
-		if (glfwCreateWindowSurface(instance, mainWindow, nullptr, &surface) != VK_SUCCESS) {
-			throw std::runtime_error("Failed to create window surface!");
-		}
-	}
-
-	void MgeWindow::createInstance()
+	MgeWindow::QueueFamilyIndices MgeWindow::findQueueFamilies(VkPhysicalDevice device) const
 	{
-
-		if (enableValidationLayers && !checkValidationLayerSupport()) {
-			throw std::runtime_error("validation layers requested, but not available!");
-		}
-
-		// Now, to create an instance we'll first have to fill in a struct with some information about our application. 
-
-		VkApplicationInfo appInfo{};
-
-		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-		appInfo.pApplicationName = "Hello Triangle";
-		appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-		appInfo.pEngineName = "SoSy Game Engine";
-		appInfo.engineVersion = VK_MAKE_VERSION(1, 3, 0);
-		appInfo.apiVersion = VK_API_VERSION_1_3;
-
-		// A lot of information in Vulkan is passed through structs instead of function parameters and we'll have to fill 
-		// in one more struct to provide sufficient information for creating an instance. This next struct is not optional 
-		// and tells the Vulkan driver which global extensions and validation layers we want to use. Global here means that 
-		// they apply to the entire program and not a specific device, which will become clear in the next few chapters.
-
-		VkInstanceCreateInfo createInfo{};
-
-		createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
-		createInfo.pApplicationInfo = &appInfo;
-
-		auto extensions = getRequiredExtensions();
-
-		createInfo.enabledExtensionCount = static_cast<unsigned int> (extensions.size());
-		createInfo.ppEnabledExtensionNames = extensions.data();
-
-		VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-
-		if (enableValidationLayers)
-		{
-			createInfo.enabledLayerCount = static_cast<uint32_t> (validationLayers.size());
-			createInfo.ppEnabledLayerNames = validationLayers.data();
-
-			populateDebugMessengerCreateInfo(debugCreateInfo);
-
-			createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
-		}
-		else
-		{
-			createInfo.enabledLayerCount = 0;
-			createInfo.pNext = nullptr;
-		}
-
-		// Create Instance
-
-		if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS)
-		{
-			throw std::runtime_error("Failed to create vulkan instance!");
-		}
-
-
 		/*
-
-
-		glm::mat4 matrix;
-		glm::vec4 vec;
-		auto test = matrix * vec;
-
+		* in Vulkan, anything from drawing to uploading textures, requires commands
+		* to be submitted to a queue. There are different types of queues that originate
+		* from different queue families and each family of queues allows only a subset of commands.
+		* For example, there could be a queue family that only allows processing of compute commands
+		* or one that only allows memory transfer related commands.
+		*
+		* We need to check which queue families are supported by the device and which one of these
+		* supports the commands that we want to use. For that purpose we'll add a new function
+		* findQueueFamilies that looks for all the queue families we need.
 		*/
 
+		QueueFamilyIndices indices;
+
+		/*
+		* The process of retrieving the list of queue families is exactly
+		* what you expect and uses vkGetPhysicalDeviceQueueFamilyProperties:
+		*/
+
+		unsigned int queueFamilyCount = 0;
+
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+		std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+
+		vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+		/*
+		* The VkQueueFamilyProperties struct contains some details about the queue family, including
+		* the type of operations that are supported and the number of queues that can be created based
+		* on that family. We need to find at least one queue family that supports VK_QUEUE_GRAPHICS_BIT.
+		*/
+
+		int i = 0;
+
+		for (const auto& queueFamily : queueFamilies)
+		{
+			if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+			{
+				indices.graphicsFamily = i;
+			}
+
+			VkBool32 presentSupport = false;
+
+			vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+
+			if (presentSupport)
+			{
+				indices.presentFamily = i;
+			}
+
+			if (indices.isCompleted())
+			{
+				break;
+			}
+
+			i++;
+		}
+
+		return indices;
 	}
+
+	// Create Swapchain
 
 	void MgeWindow::createSwapChain() {
 		SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
@@ -534,6 +584,30 @@ namespace mge {
 		swapChainExtent = extent;
 	}
 
+	MgeWindow::SwapChainSupportDetails MgeWindow::querySwapChainSupport(VkPhysicalDevice device) {
+		SwapChainSupportDetails details;
+
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+
+		uint32_t formatCount;
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+
+		if (formatCount != 0) {
+			details.formats.resize(formatCount);
+			vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
+		}
+
+		uint32_t presentModeCount;
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
+
+		if (presentModeCount != 0) {
+			details.presentModes.resize(presentModeCount);
+			vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
+		}
+
+		return details;
+	}
+
 	VkSurfaceFormatKHR MgeWindow::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
 		for (const auto& availableFormat : availableFormats) {
 			if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
@@ -574,39 +648,34 @@ namespace mge {
 		}
 	}
 
-	MgeWindow::SwapChainSupportDetails MgeWindow::querySwapChainSupport(VkPhysicalDevice device) {
-		SwapChainSupportDetails details;
+	// Other fincion
 
-		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+	int MgeWindow::rateDeviceSuitability(VkPhysicalDevice device) {
 
-		uint32_t formatCount;
-		vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+		VkPhysicalDeviceProperties deviceProperties;
+		VkPhysicalDeviceFeatures deviceFeatures;
+		vkGetPhysicalDeviceProperties(device, &deviceProperties);
+		vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
 
-		if (formatCount != 0) {
-			details.formats.resize(formatCount);
-			vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
+		int score = 0;
+
+		// Discrete GPUs have a significant performance advantage
+		if (deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
+			score += 1000;
 		}
 
-		uint32_t presentModeCount;
-		vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
+		// Maximum possible size of textures affects graphics quality
+		score += deviceProperties.limits.maxImageDimension2D;
 
-		if (presentModeCount != 0) {
-			details.presentModes.resize(presentModeCount);
-			vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
+		// Application can't function without geometry shaders
+		if (!deviceFeatures.geometryShader) {
+			return 0;
 		}
 
-		return details;
+		return score;
 	}
 
-
-	void MgeWindow::mainLoop()
-	{
-
-		while (!getShouldClose())
-		{
-			glfwPollEvents();
-		}
-	}
+	// Cleaning Up
 
 	void MgeWindow::cleanUp()
 	{
@@ -627,61 +696,6 @@ namespace mge {
 
 		glfwTerminate();
 
-	}
-
-	VkResult MgeWindow::createDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
-		const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
-	{
-		auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
-
-		if (func != nullptr)
-		{
-			return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-		}
-		else
-		{
-			return VK_ERROR_EXTENSION_NOT_PRESENT;
-		}
-	}
-
-	void MgeWindow::destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
-	{
-		auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "VkDestroyUtilsMessangerEXT");
-
-		if (func != nullptr)
-		{
-			func(instance, debugMessenger, pAllocator);
-		}
-	}
-
-	bool MgeWindow::checkValidationLayerSupport() {
-
-		uint32_t layerCount;
-		vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-
-		std::vector<VkLayerProperties> availableLayers(layerCount);
-		vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-
-		for (const char* layerName : validationLayers)
-		{
-			bool layerFound = false;
-
-			for (const auto& layerProperties : availableLayers)
-			{
-				if (strcmp(layerName, layerProperties.layerName) == 0)
-				{
-					layerFound = true;
-					break;
-				}
-			}
-
-			if (!layerFound)
-			{
-				return false;
-			}
-		}
-
-		return true;
 	}
 
 }

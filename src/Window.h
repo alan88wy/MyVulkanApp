@@ -45,6 +45,8 @@ namespace mge {
 
 	private:
 
+		// Variable & struc Declaration
+
 		GLFWwindow* mainWindow;
 
 		int width, height;
@@ -110,8 +112,53 @@ namespace mge {
 			}
 		};
 
+		struct SwapChainSupportDetails
+		{
+			VkSurfaceCapabilitiesKHR capabilities;
+			std::vector<VkSurfaceFormatKHR> formats;
+			std::vector<VkPresentModeKHR> presentModes;
+		};
+
+		// End of Variable and struc declaration
+		
+		// Vulkan Initialization functions
+
+
+		// Create Instance
+
+		void createInstance();
+
+		bool checkValidationLayerSupport();
+
+		std::vector<const char*> getRequiredExtensions();
+
+		void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
+
+		// End of Create Instance
+
+		// Setting Up Debugger
+
+		void setupDebugMessenger();
+
+		VkResult createDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
+
+		void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
+
+		// End of Debugger
+
+		void createSurface();
+
+		void pickPhysicalDevice();
+
+		void createLogicalDevice();
+
+		void createSwapChain();
+
+		// End of Vulkan Initialization Funciont
+
+
 		/*
-		* * But what if a queue family is not available? We could throw an exception in findQueueFamilies,
+		* *But what if a queue family is not available? We could throw an exception in findQueueFamilies,
 		* but this function is not really the right place to make decisions about device suitability.
 		* For example, we may prefer devices with a dedicated transfer queue family, but not require it.
 		* Therefore we need some way of indicating whether a particular queue family was found.
@@ -124,21 +171,14 @@ namespace mge {
 		you can query if it contains a value or not by calling its has_value() member function.
 		That means that we can change the logic to
 		*/
+
 		QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) const;
-
-		void createInstance();
-
-		void pickPhysicalDevice();
 
 		bool isDeviceSuitable(VkPhysicalDevice device);
 
 		int rateDeviceSuitability(VkPhysicalDevice device);
 
-		void createLogicalDevice();
 
-		void createSurface();
-
-		void createSwapChain();
 
 		bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 
@@ -150,17 +190,8 @@ namespace mge {
 
 		bool getShouldClose() { return glfwWindowShouldClose(mainWindow); }
 
-		bool checkValidationLayerSupport();
 
-		void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator);
 
-		VkResult createDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);
-
-		void setupDebugMessenger();
-
-		void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
-
-		std::vector<const char*> getRequiredExtensions();
 
 		static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 			VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallBackData, void* pUserData)
@@ -170,12 +201,9 @@ namespace mge {
 			return VK_FALSE;
 		};
 
-		struct SwapChainSupportDetails
-		{
-			VkSurfaceCapabilitiesKHR capabilities;
-			std::vector<VkSurfaceFormatKHR> formats;
-			std::vector<VkPresentModeKHR> presentModes;
-		};
+		
+
+
 
 		SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
 
