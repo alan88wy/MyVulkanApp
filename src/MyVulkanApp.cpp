@@ -9,10 +9,10 @@ const uint32_t HEIGHT = 900;
 
 int main() {
 
-    FirstApp app{};
+    mge::FirstApp app{};
 
     try {
-        app.Run();
+        app.run();
     }
     catch (const std::exception& e) {
         std::cerr << e.what() << "\n";
