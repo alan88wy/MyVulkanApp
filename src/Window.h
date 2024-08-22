@@ -18,6 +18,7 @@
 #include <limits>
 #include <optional>
 #include <set>
+#include <fstream>
 
 #ifdef NDEBUG
 const bool enableValidationLayers = false;
@@ -92,6 +93,8 @@ namespace mge {
 		VkFormat swapChainImageFormat;
 		VkExtent2D swapChainExtent;
 
+		std::vector<VkImageView> swapChainImageViews;
+
 		const std::vector<const char*> validationLayers = {
 			"VK_LAYER_KHRONOS_validation"
 		};
@@ -154,7 +157,7 @@ namespace mge {
 
 		void createSwapChain();
 
-		// End of Vulkan Initialization Funciont
+		// End of Vulkan Initialization Function
 
 
 		/*
@@ -178,11 +181,12 @@ namespace mge {
 
 		int rateDeviceSuitability(VkPhysicalDevice device);
 
-
-
 		bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 
+		// Create Swapchain
+
 		VkSurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats);
+
 
 		VkPresentModeKHR chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes);
 
@@ -191,21 +195,19 @@ namespace mge {
 		bool getShouldClose() { return glfwWindowShouldClose(mainWindow); }
 
 
-
-
 		static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-			VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallBackData, void* pUserData)
-		{
-			std::cerr << "Validation Layer : " << pCallBackData->pMessage << std::endl;
-
-			return VK_FALSE;
-		};
-
-		
-
-
+			VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallBackData, void* pUserData);
 
 		SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
+
+		// Image views
+		void createImageViews();
+
+		void createGraphicsPipeline();
+
+		VkShaderModule createShaderModule(const std::vector<char>& code);
+
+		static std::vector<char> ReadFile(const std::string& filename);
 
 	};
 }
