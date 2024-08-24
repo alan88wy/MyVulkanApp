@@ -203,11 +203,16 @@ namespace mge {
 		// Image views
 		void createImageViews();
 
+		// Pipeline
+
 		void createGraphicsPipeline();
 
 		VkShaderModule createShaderModule(const std::vector<char>& code);
 
 		static std::vector<char> ReadFile(const std::string& filename);
+
+		VkPipelineLayout pipelineLayout;
+
 
 	};
 }
