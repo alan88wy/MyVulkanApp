@@ -61,7 +61,11 @@ namespace mge {
 
 		createImageViews();
 
+		createRenderPass();
+
 		createGraphicsPipeline();
+
+		createFrameBuffer();
 
 	}
 
@@ -708,6 +712,45 @@ namespace mge {
 		return buffer;
 
 	}
+
+	void MgeWindow::createRenderPass()
+	{
+		VkAttachmentDescription colorAttachment{};
+
+		colorAttachment.format = swapChainImageFormat;
+		colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+		colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+		VkAttachmentReference colorAttachmentRef{};
+
+		colorAttachmentRef.attachment = 0;
+		colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+		VkSubpassDescription subpass{};
+
+		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+		subpass.colorAttachmentCount = 1;
+		subpass.pColorAttachments = &colorAttachmentRef;
+
+		VkRenderPassCreateInfo renderPassInfo{};
+
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+		renderPassInfo.attachmentCount = 1;
+		renderPassInfo.pAttachments = &colorAttachment;
+		renderPassInfo.subpassCount = 1;
+		renderPassInfo.pSubpasses = &subpass;
+
+		if (vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create render pass");
+		}
+
+	}
 	
 	void MgeWindow::createGraphicsPipeline()
 	{
@@ -731,7 +774,9 @@ namespace mge {
 
 		VkPipelineShaderStageCreateInfo shaderStages[] = { vertShaderStageInfo, fragShaderStageInfo };
 
-		// fit function
+		// Vulkan Graphics Pipeline Layout
+
+		// 1. Create Vertex Input
 
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 
@@ -739,6 +784,7 @@ namespace mge {
 		vertexInputInfo.vertexAttributeDescriptionCount = 0;
 		vertexInputInfo.vertexAttributeDescriptionCount = 0;
 		
+		// 2. Input Assembly
 
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
 
@@ -746,7 +792,7 @@ namespace mge {
 		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
 		inputAssembly.primitiveRestartEnable = VK_FALSE;
 
-		// Set view port
+		// 3. Viewport and Scissor
 
 		VkViewport viewport{};
 
@@ -762,6 +808,8 @@ namespace mge {
 		scissor.offset = { 0,0 };
 		scissor.extent = swapChainExtent;
 
+		// Dynamic State
+
 		VkPipelineViewportStateCreateInfo viewportState{};
 
 		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
@@ -769,6 +817,8 @@ namespace mge {
 		viewportState.pViewports = &viewport;
 		viewportState.scissorCount = 1;
 		viewportState.pScissors = &scissor;
+
+		// Rasterization
 
 		VkPipelineRasterizationStateCreateInfo rasterizer{};
 		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -780,10 +830,14 @@ namespace mge {
 		rasterizer.frontFace = VK_FRONT_FACE_CLOCKWISE;
 		rasterizer.depthBiasEnable = VK_FALSE;
 
-		VkPipelineMultisampleStateCreateInfo multiSampline{};
-		multiSampline.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-		multiSampline.sampleShadingEnable = VK_FALSE;
-		multiSampline.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+		// Multi Sampling
+
+		VkPipelineMultisampleStateCreateInfo multiSampling{};
+		multiSampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+		multiSampling.sampleShadingEnable = VK_FALSE;
+		multiSampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+		// Blending
 
 		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
@@ -810,10 +864,61 @@ namespace mge {
 			throw std::runtime_error("Failed to create Pipeline Layout");
 		}
 
-		// fit function
+		// end of pipeline
+
+		// Create Graphics Pipeline
+
+		VkGraphicsPipelineCreateInfo pipelineInfo{};
+
+		pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+		pipelineInfo.stageCount = 2;
+		pipelineInfo.pStages = shaderStages;
+		pipelineInfo.pVertexInputState = &vertexInputInfo;
+		pipelineInfo.pInputAssemblyState = &inputAssembly;
+		pipelineInfo.pViewportState = &viewportState;
+		pipelineInfo.pRasterizationState = &rasterizer;
+		pipelineInfo.pMultisampleState = &multiSampling;
+		pipelineInfo.pColorBlendState = &colorBlending;
+		pipelineInfo.layout = pipelineLayout;
+		pipelineInfo.renderPass = renderPass;
+		pipelineInfo.subpass = 0;
+		pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
+
+		if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &graphicsPipeline) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create graphics pipeline!");
+		}
 
 		vkDestroyShaderModule(device, fragShaderModule, nullptr);
 		vkDestroyShaderModule(device, vertShaderModule, nullptr);
+	}
+
+	void MgeWindow::createFrameBuffer()
+	{
+		swapChainFrameBuffers.resize(swapChainImageViews.size());
+
+		for (unsigned long long i = 0; i < swapChainImageViews.size(); i++)
+		{
+			VkImageView attachments[] =
+			{
+				swapChainImageViews[i]
+			};
+
+			VkFramebufferCreateInfo frameBufferInfo{};
+
+			frameBufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+			frameBufferInfo.renderPass = renderPass;
+			frameBufferInfo.attachmentCount = 1;
+			frameBufferInfo.pAttachments = attachments;
+			frameBufferInfo.width = swapChainExtent.width;
+			frameBufferInfo.height = swapChainExtent.height;
+			frameBufferInfo.layers = 1;
+
+			if (vkCreateFramebuffer(device, &frameBufferInfo, nullptr, &swapChainFrameBuffers[i]) != VK_SUCCESS)
+			{
+				throw std::runtime_error("Failed to create frame buffer!");
+			}
+		}
 	}
 
 	VkShaderModule MgeWindow::createShaderModule(const std::vector<char>& code)
@@ -875,7 +980,16 @@ namespace mge {
 
 	void MgeWindow::cleanUp()
 	{
+		for (auto frameBuffer : swapChainFrameBuffers)
+		{
+			vkDestroyFramebuffer(device, frameBuffer, nullptr);
+		}
+
+		vkDestroyPipeline(device, graphicsPipeline, nullptr);
+
 		vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+
+		vkDestroyRenderPass(device, renderPass, nullptr);
 
 		for (auto imageView : swapChainImageViews)
 		{

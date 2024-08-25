@@ -94,7 +94,7 @@ namespace mge {
 		VkExtent2D swapChainExtent;
 
 		std::vector<VkImageView> swapChainImageViews;
-
+			 
 		const std::vector<const char*> validationLayers = {
 			"VK_LAYER_KHRONOS_validation"
 		};
@@ -203,6 +203,11 @@ namespace mge {
 		// Image views
 		void createImageViews();
 
+		// Render Pass
+
+		VkRenderPass renderPass;
+		void createRenderPass();
+
 		// Pipeline
 
 		void createGraphicsPipeline();
@@ -213,6 +218,12 @@ namespace mge {
 
 		VkPipelineLayout pipelineLayout;
 
+		VkPipeline graphicsPipeline;
+
+		// Frame Buffer
+
+		std::vector<VkFramebuffer> swapChainFrameBuffers;
+		void createFrameBuffer();
 
 	};
 }
