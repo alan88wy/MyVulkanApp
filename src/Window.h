@@ -225,5 +225,13 @@ namespace mge {
 		std::vector<VkFramebuffer> swapChainFrameBuffers;
 		void createFrameBuffer();
 
+		// Command Buffer - Deal with GPU
+		VkCommandPool commandPool;
+		std::vector<VkCommandBuffer> commandBuffers;
+
+		void createCommandPool();
+
+		void createCommandBuffers();
+
 	};
 }
