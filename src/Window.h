@@ -1,6 +1,6 @@
 #pragma once
 
-// #define NDEBUG
+#define NDEBUG
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -46,7 +46,9 @@ namespace mge {
 
 	private:
 
-		// Variable & struc Declaration
+		// Variable & struct Declaration
+
+		const int MAX_FRAMES_IN_FLIGHT = 2; // No of frame to process concurrently
 
 		GLFWwindow* mainWindow;
 
@@ -94,7 +96,7 @@ namespace mge {
 		VkExtent2D swapChainExtent;
 
 		std::vector<VkImageView> swapChainImageViews;
-			 
+
 		const std::vector<const char*> validationLayers = {
 			"VK_LAYER_KHRONOS_validation"
 		};
@@ -123,7 +125,7 @@ namespace mge {
 		};
 
 		// End of Variable and struc declaration
-		
+
 		// Vulkan Initialization functions
 
 
@@ -229,9 +231,21 @@ namespace mge {
 		VkCommandPool commandPool;
 		std::vector<VkCommandBuffer> commandBuffers;
 
+		// Each frame should have it's own semephore
+
+		std::vector<VkSemaphore> imageAvailableSemaphores;
+		std::vector<VkSemaphore> renderFinishedSemaphores;
+		std::vector<VkFence> inFlightFences;
+		std::vector<VkFence> imagesInFlight;
+		unsigned long long currentFrame = 0;
+
 		void createCommandPool();
 
 		void createCommandBuffers();
+
+		void createSyncObjects();
+
+		void drawFrame();
 
 	};
 }

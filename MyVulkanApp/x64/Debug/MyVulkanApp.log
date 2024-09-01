@@ -1,5 +1,2 @@
-﻿  FirstApp.cpp
-  MyVulkanApp.cpp
-  Window.cpp
-  Generating Code...
+﻿  Window.cpp
   MyVulkanApp.vcxproj -> D:\Learning\vulkan\MyVulkanApp\x64\Debug\MyVulkanApp.exe
