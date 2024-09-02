@@ -58,6 +58,9 @@ namespace mge {
 
 		VkInstance instance;
 
+		const std::string vertShaderFile = "shaders/vert.spv";
+		const std::string fragShaderFile = "shaders/frag.spv";
+
 		VkDebugUtilsMessengerEXT debugMessenger;
 
 		/*
@@ -225,7 +228,7 @@ namespace mge {
 		// Frame Buffer
 
 		std::vector<VkFramebuffer> swapChainFrameBuffers;
-		void createFrameBuffer();
+		void createFrameBuffers();
 
 		// Command Buffer - Deal with GPU
 		VkCommandPool commandPool;
@@ -246,6 +249,13 @@ namespace mge {
 		void createSyncObjects();
 
 		void drawFrame();
+
+		// Swapchain Recreation
+		bool frameBufferResize = false;
+
+		static void frameBufferResizeCallback(GLFWwindow* window, int width, int height);
+		void cleanUpSwapChain();
+		void recreateSwapChain();
 
 	};
 }

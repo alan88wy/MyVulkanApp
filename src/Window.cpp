@@ -31,7 +31,7 @@ namespace mge {
 		// Setup GLFW Windows Properties
 
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-		glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+		// glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);  // Disable window resize
 
 		mainWindow = glfwCreateWindow(width, height, windowName.c_str(), nullptr, nullptr);
 
@@ -42,7 +42,17 @@ namespace mge {
 			return EXIT_FAILURE;
 		}
 
+		glfwSetWindowUserPointer(mainWindow, this);
+		glfwSetFramebufferSizeCallback(mainWindow, frameBufferResizeCallback);
+
+
 		return EXIT_SUCCESS;
+	}
+
+	void MgeWindow::frameBufferResizeCallback( GLFWwindow *window, int width, int height)
+	{
+		auto app = reinterpret_cast<MgeWindow*>(glfwGetWindowUserPointer(window));
+		app->frameBufferResize = true;
 	}
 
 	void MgeWindow::initVulkan()
@@ -65,7 +75,7 @@ namespace mge {
 
 		createGraphicsPipeline();
 
-		createFrameBuffer();
+		createFrameBuffers();
 
 		// GPU
 		createCommandPool();
@@ -589,7 +599,7 @@ namespace mge {
 		createInfo.presentMode = presentMode;
 		createInfo.clipped = VK_TRUE;
 
-		createInfo.oldSwapchain = VK_NULL_HANDLE;
+		// createInfo.oldSwapchain = VK_NULL_HANDLE;
 
 		if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) != VK_SUCCESS) {
 			throw std::runtime_error("failed to create swap chain!");
@@ -776,8 +786,8 @@ namespace mge {
 
 	void MgeWindow::createGraphicsPipeline()
 	{
-		auto vertShaderCode = ReadFile("shaders/vert.spv");
-		auto fragShaderCode = ReadFile("shaders/frag.spv");
+		auto vertShaderCode = ReadFile(vertShaderFile);
+		auto fragShaderCode = ReadFile(fragShaderFile);
 
 		VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
 		VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
@@ -915,7 +925,7 @@ namespace mge {
 		vkDestroyShaderModule(device, vertShaderModule, nullptr);
 	}
 
-	void MgeWindow::createFrameBuffer()
+	void MgeWindow::createFrameBuffers()
 	{
 		swapChainFrameBuffers.resize(swapChainImageViews.size());
 
@@ -1044,8 +1054,19 @@ namespace mge {
 
 		unsigned int imageIndex;
 
-		vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
+		VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
 
+		if (result == VK_ERROR_OUT_OF_DATE_KHR)
+		{
+			recreateSwapChain();
+			return;
+		}
+		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+		{
+			throw std::runtime_error("Failed to acquire swap image!");
+		}
+
+			
 		if (imagesInFlight[imageIndex] != VK_NULL_HANDLE)
 		{
 			vkWaitForFences(device, 1, &imagesInFlight[imageIndex], VK_TRUE, UINT64_MAX);
@@ -1091,7 +1112,18 @@ namespace mge {
 
 		presentInfo.pImageIndices = &imageIndex;
 
-		vkQueuePresentKHR(presentQueue, &presentInfo);
+		result = vkQueuePresentKHR(presentQueue, &presentInfo);
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || frameBufferResize)
+		{
+			frameBufferResize = false;
+
+			recreateSwapChain();
+		}
+		else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+		{
+			throw std::runtime_error("Failed to present swap image!");
+		}
 
 		// move to next frame
 		currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -1157,21 +1189,14 @@ namespace mge {
 
 	// Cleaning Up
 
-	void MgeWindow::cleanUp()
+	void MgeWindow::cleanUpSwapChain()
 	{
-		for (unsigned long long i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-		{
-			vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
-			vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
-			vkDestroyFence(device, inFlightFences[i], nullptr);
-		}
-
-		vkDestroyCommandPool(device, commandPool, nullptr);
-
 		for (auto frameBuffer : swapChainFrameBuffers)
 		{
 			vkDestroyFramebuffer(device, frameBuffer, nullptr);
 		}
+
+		vkFreeCommandBuffers(device, commandPool, static_cast<unsigned int>(commandBuffers.size()), commandBuffers.data());
 
 		vkDestroyPipeline(device, graphicsPipeline, nullptr);
 
@@ -1185,6 +1210,20 @@ namespace mge {
 		}
 
 		vkDestroySwapchainKHR(device, swapChain, nullptr);
+	}
+
+	void MgeWindow::cleanUp()
+	{
+		cleanUpSwapChain();
+
+		for (unsigned long long i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+		{
+			vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
+			vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
+			vkDestroyFence(device, inFlightFences[i], nullptr);
+		}
+
+		vkDestroyCommandPool(device, commandPool, nullptr);
 
 		vkDestroyDevice(device, nullptr);
 
@@ -1200,6 +1239,33 @@ namespace mge {
 		glfwDestroyWindow(mainWindow);
 
 		glfwTerminate();
+
+	}
+
+	void MgeWindow::recreateSwapChain()
+	{
+		int width = 0, height = 0;
+		glfwGetFramebufferSize(mainWindow, &width, &height);
+
+		while (width == 0 || height == 0)
+		{
+			glfwGetFramebufferSize(mainWindow, &width, &height);
+			glfwWaitEvents();
+		}
+
+		vkDeviceWaitIdle(device);
+
+		cleanUpSwapChain();
+
+		// re-create swapchain
+		createSwapChain();
+		createImageViews();
+		createRenderPass();
+		createGraphicsPipeline();
+		createFrameBuffers();
+		createCommandBuffers();
+
+		imagesInFlight.resize(swapChainImages.size(), VK_NULL_HANDLE);
 
 	}
 
