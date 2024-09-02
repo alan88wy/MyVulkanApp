@@ -816,6 +816,15 @@ namespace mge {
 		vertexInputInfo.vertexAttributeDescriptionCount = 0;
 		vertexInputInfo.vertexAttributeDescriptionCount = 0;
 
+		// Setup graphics pipeline to accept the graphics format
+		auto bindingDesription = Vertex::getBindingDescription();
+		auto attributeDescriptions = Vertex::getAttributeDescriptions();
+
+		vertexInputInfo.vertexBindingDescriptionCount = 1;
+		vertexInputInfo.vertexAttributeDescriptionCount = static_cast<unsigned int>(attributeDescriptions.size());
+		vertexInputInfo.pVertexBindingDescriptions = &bindingDesription;
+		vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
+
 		// 2. Input Assembly
 
 		VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
