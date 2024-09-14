@@ -42,6 +42,8 @@ namespace mge {
 
 		void mainLoop();
 
+		void run();
+
 		void cleanUp();
 
 		// ~Window();
@@ -299,10 +301,17 @@ namespace mge {
 
 		const std::vector<Vertex> vertices =
 		{
-			{{  0.0f, -0.5f}, { 1.0f, 0.0f, 0.0f }},
-			{{  0.5f,  0.5f}, { 0.0f, 1.0f, 0.0f }},
-			{{ -0.5f,  0.5f}, { 0.0f, 0.0f, 1.0f }}
+			{{ 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+			{{ 0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}},
+			{{-0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}}
 		};
 
+		// Vertex Buffer
+		VkBuffer vertexBuffer;
+		VkDeviceMemory vertexBufferMemory;
+
+		void createVertexBuffer();
+
+		unsigned int findMemoryType(unsigned int typeFilter, VkMemoryPropertyFlags properties);
 	};
 }

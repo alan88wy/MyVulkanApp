@@ -2,17 +2,20 @@
 //
 
 #include <stdexcept>
-#include "FirstApp.h"
+//#include "FirstApp.h"
+#include "Window.h"
 
-// const uint32_t WIDTH = 1440;
-// const uint32_t HEIGHT = 900;
+ const uint32_t WIDTH = 1440;
+ const uint32_t HEIGHT = 900;
+ std::string windowName = { "My First App" };
 
 int main() {
 
-    mge::FirstApp app{};
+    //mge::FirstApp app{};
+    mge::MgeWindow mainWindow{ WIDTH, HEIGHT, windowName };
 
     try {
-        app.run();
+        mainWindow.run();
     }
     catch (const std::exception& e) {
         std::cerr << e.what() << "\n";

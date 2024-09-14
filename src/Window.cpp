@@ -80,6 +80,8 @@ namespace mge {
 		// GPU
 		createCommandPool();
 
+		createVertexBuffer();
+
 		createCommandBuffers();
 
 		createSyncObjects();
@@ -97,6 +99,14 @@ namespace mge {
 
 		vkDeviceWaitIdle(device);  // Need to do this. Even after the while loop finished, the drawing could still going on.
 
+	}
+
+	void MgeWindow::run()
+	{
+		initWindow();
+		initVulkan();
+		mainLoop();
+		cleanUp();
 	}
 
 	// Vulkan Initialization
@@ -977,6 +987,56 @@ namespace mge {
 		}
 	}
 
+	void MgeWindow::createVertexBuffer()
+	{
+		VkBufferCreateInfo bufferInfo{};
+		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+		bufferInfo.size = sizeof(vertices[0]) * vertices.size();
+		bufferInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+		if (vkCreateBuffer(device, &bufferInfo, nullptr, &vertexBuffer) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create vertex buffer");
+		}
+
+		// Allocate memory
+		VkMemoryRequirements memRequirements; // get memory requirements
+		vkGetBufferMemoryRequirements(device, vertexBuffer, &memRequirements);
+
+		VkMemoryAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+		allocInfo.allocationSize = memRequirements.size;
+		allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+		if (vkAllocateMemory(device, &allocInfo, nullptr, &vertexBufferMemory) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to allocate vertex buffer memory");
+		}
+
+		vkBindBufferMemory(device, vertexBuffer, vertexBufferMemory, 0);
+		void* data;
+		vkMapMemory(device, vertexBufferMemory, 0, bufferInfo.size, 0, &data);
+		memcpy(data, vertices.data(), (unsigned long long)bufferInfo.size);
+		vkUnmapMemory(device, vertexBufferMemory);
+	}
+
+	unsigned int MgeWindow::findMemoryType(unsigned int typeFilter, VkMemoryPropertyFlags properties)
+	{
+		VkPhysicalDeviceMemoryProperties memProperties;
+		vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+
+		for (unsigned int i = 0; i < memProperties.memoryTypeCount; i++)
+		{
+			if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+			{
+				return i;
+			}
+		}
+
+		throw std::runtime_error("Failed to find suitable memory type!");
+	}
+
 	void MgeWindow::createCommandBuffers()
 	{
 		commandBuffers.resize(swapChainFrameBuffers.size());
@@ -1017,8 +1077,11 @@ namespace mge {
 
 			// bind graphic pipeline
 			vkCmdBindPipeline(commandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
-
-			vkCmdDraw(commandBuffers[i], 3, 1, 0, 0);
+			
+			VkBuffer vertexBuffers[] = { vertexBuffer };
+			VkDeviceSize offsets[] = { 0 };
+			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
+			vkCmdDraw(commandBuffers[i], static_cast<unsigned int>(vertices.size()), 1, 0, 0);
 
 			vkCmdEndRenderPass(commandBuffers[i]);
 
@@ -1195,7 +1258,6 @@ namespace mge {
 		return score;
 	}
 
-
 	// Cleaning Up
 
 	void MgeWindow::cleanUpSwapChain()
@@ -1224,6 +1286,9 @@ namespace mge {
 	void MgeWindow::cleanUp()
 	{
 		cleanUpSwapChain();
+
+		vkDestroyBuffer(device, vertexBuffer, nullptr);
+		vkFreeMemory(device, vertexBufferMemory, nullptr);
 
 		for (unsigned long long i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 		{
