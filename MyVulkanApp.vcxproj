@@ -143,12 +143,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\FirstApp.cpp" />
     <ClCompile Include="src\MyVulkanApp.cpp" />
     <ClCompile Include="src\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\FirstApp.h" />
     <ClInclude Include="src\Window.h" />
   </ItemGroup>
   <ItemGroup>

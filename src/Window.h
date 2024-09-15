@@ -29,12 +29,12 @@ const bool enableValidationLayers = true;
 #endif
 
 namespace mge {
-	class MgeWindow
+	class MgeEngine
 	{
 	public:
-		MgeWindow();
+		MgeEngine();
 
-		MgeWindow(int w, int h, std::string name);
+		MgeEngine(int w, int h, std::string name);
 
 		int initWindow();
 
@@ -302,7 +302,7 @@ namespace mge {
 		const std::vector<Vertex> vertices =
 		{
 			{{ 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-			{{ 0.5f,  0.5f}, {1.0f, 1.0f, 1.0f}},
+			{{ 0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}},
 			{{-0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}}
 		};
 

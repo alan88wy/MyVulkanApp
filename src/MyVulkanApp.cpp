@@ -12,7 +12,7 @@
 int main() {
 
     //mge::FirstApp app{};
-    mge::MgeWindow mainWindow{ WIDTH, HEIGHT, windowName };
+    mge::MgeEngine mainWindow{ WIDTH, HEIGHT, windowName };
 
     try {
         mainWindow.run();

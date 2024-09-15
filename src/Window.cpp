@@ -1,7 +1,7 @@
 #include "Window.h"
 
 namespace mge {
-	MgeWindow::MgeWindow()
+	MgeEngine::MgeEngine()
 	{
 		width = 800;
 		height = 600;
@@ -9,14 +9,14 @@ namespace mge {
 
 	}
 
-	MgeWindow::MgeWindow(int w, int h, std::string name) : width{ w }, height{ h }, windowName{ name }
+	MgeEngine::MgeEngine(int w, int h, std::string name) : width{ w }, height{ h }, windowName{ name }
 	{
 		width = w;
 		height = h;
 		windowName = name;
 	}
 
-	int MgeWindow::initWindow()
+	int MgeEngine::initWindow()
 	{
 
 		// Initialize glfw
@@ -49,13 +49,13 @@ namespace mge {
 		return EXIT_SUCCESS;
 	}
 
-	void MgeWindow::frameBufferResizeCallback( GLFWwindow *window, int width, int height)
+	void MgeEngine::frameBufferResizeCallback( GLFWwindow *window, int width, int height)
 	{
-		auto app = reinterpret_cast<MgeWindow*>(glfwGetWindowUserPointer(window));
+		auto app = reinterpret_cast<MgeEngine*>(glfwGetWindowUserPointer(window));
 		app->frameBufferResize = true;
 	}
 
-	void MgeWindow::initVulkan()
+	void MgeEngine::initVulkan()
 	{
 		createInstance();
 
@@ -87,7 +87,7 @@ namespace mge {
 		createSyncObjects();
 	}
 
-	void MgeWindow::mainLoop()
+	void MgeEngine::mainLoop()
 	{
 
 		while (!getShouldClose())
@@ -101,7 +101,7 @@ namespace mge {
 
 	}
 
-	void MgeWindow::run()
+	void MgeEngine::run()
 	{
 		initWindow();
 		initVulkan();
@@ -113,7 +113,7 @@ namespace mge {
 
 	// Create Instance
 
-	void MgeWindow::createInstance()
+	void MgeEngine::createInstance()
 	{
 
 		if (enableValidationLayers && !checkValidationLayerSupport()) {
@@ -182,7 +182,7 @@ namespace mge {
 
 	}
 
-	bool MgeWindow::checkValidationLayerSupport() {
+	bool MgeEngine::checkValidationLayerSupport() {
 
 		uint32_t layerCount;
 		vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -212,7 +212,7 @@ namespace mge {
 		return true;
 	}
 
-	std::vector<const char*> MgeWindow::getRequiredExtensions()
+	std::vector<const char*> MgeEngine::getRequiredExtensions()
 	{
 
 		uint32_t glfwExtensionCount = 0;
@@ -230,7 +230,7 @@ namespace mge {
 		return extensions;
 	}
 
-	void MgeWindow::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
+	void MgeEngine::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
 	{
 		createInfo = {};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -241,7 +241,7 @@ namespace mge {
 
 	// Setup Debugger
 
-	void MgeWindow::setupDebugMessenger()
+	void MgeEngine::setupDebugMessenger()
 	{
 		if (!enableValidationLayers) {
 			return;
@@ -257,7 +257,7 @@ namespace mge {
 		}
 	}
 
-	VkResult MgeWindow::createDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+	VkResult MgeEngine::createDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
 		const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger)
 	{
 		auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
@@ -272,7 +272,7 @@ namespace mge {
 		}
 	}
 
-	void MgeWindow::destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
+	void MgeEngine::destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, const VkAllocationCallbacks* pAllocator)
 	{
 		auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
 
@@ -284,7 +284,7 @@ namespace mge {
 
 	// Create Surface
 
-	void MgeWindow::createSurface() {
+	void MgeEngine::createSurface() {
 
 		if (glfwCreateWindowSurface(instance, mainWindow, nullptr, &surface) != VK_SUCCESS) {
 			throw std::runtime_error("Failed to create window surface!");
@@ -292,7 +292,7 @@ namespace mge {
 	}
 
 
-	void MgeWindow::pickPhysicalDevice()
+	void MgeEngine::pickPhysicalDevice()
 	{
 		/*
 		* Listing the graphics cards is very similar to listing extensions
@@ -359,7 +359,7 @@ namespace mge {
 
 	}
 
-	bool MgeWindow::isDeviceSuitable(VkPhysicalDevice device)
+	bool MgeEngine::isDeviceSuitable(VkPhysicalDevice device)
 	{
 		QueueFamilyIndices indices = findQueueFamilies(device);
 
@@ -389,7 +389,7 @@ namespace mge {
 
 	}
 
-	bool MgeWindow::checkDeviceExtensionSupport(VkPhysicalDevice device) {
+	bool MgeEngine::checkDeviceExtensionSupport(VkPhysicalDevice device) {
 
 		uint32_t extensionCount;
 		vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
@@ -406,7 +406,7 @@ namespace mge {
 		return requiredExtensions.empty();
 	}
 
-	void MgeWindow::createLogicalDevice()
+	void MgeEngine::createLogicalDevice()
 	{
 
 		/*
@@ -502,7 +502,7 @@ namespace mge {
 
 	}
 
-	MgeWindow::QueueFamilyIndices MgeWindow::findQueueFamilies(VkPhysicalDevice device) const
+	MgeEngine::QueueFamilyIndices MgeEngine::findQueueFamilies(VkPhysicalDevice device) const
 	{
 		/*
 		* in Vulkan, anything from drawing to uploading textures, requires commands
@@ -568,7 +568,7 @@ namespace mge {
 
 	// Create Swapchain
 
-	void MgeWindow::createSwapChain() {
+	void MgeEngine::createSwapChain() {
 		SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
 
 		VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
@@ -623,7 +623,7 @@ namespace mge {
 		swapChainExtent = extent;
 	}
 
-	MgeWindow::SwapChainSupportDetails MgeWindow::querySwapChainSupport(VkPhysicalDevice device) {
+	MgeEngine::SwapChainSupportDetails MgeEngine::querySwapChainSupport(VkPhysicalDevice device) {
 		SwapChainSupportDetails details;
 
 		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
@@ -647,7 +647,7 @@ namespace mge {
 		return details;
 	}
 
-	VkSurfaceFormatKHR MgeWindow::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
+	VkSurfaceFormatKHR MgeEngine::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) {
 		for (const auto& availableFormat : availableFormats) {
 			if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB && availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
 				return availableFormat;
@@ -657,7 +657,7 @@ namespace mge {
 		return availableFormats[0];
 	}
 
-	VkPresentModeKHR MgeWindow::chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
+	VkPresentModeKHR MgeEngine::chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) {
 		for (const auto& availablePresentMode : availablePresentModes) {
 			if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
 				return availablePresentMode;
@@ -667,7 +667,7 @@ namespace mge {
 		return VK_PRESENT_MODE_FIFO_KHR;
 	}
 
-	VkExtent2D MgeWindow::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
+	VkExtent2D MgeEngine::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities) {
 		if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
 			return capabilities.currentExtent;
 		}
@@ -689,7 +689,7 @@ namespace mge {
 
 	// Create ImageView
 
-	void MgeWindow::createImageViews()
+	void MgeEngine::createImageViews()
 	{
 		swapChainImageViews.resize(swapChainImages.size());
 
@@ -697,6 +697,7 @@ namespace mge {
 		{
 			VkImageViewCreateInfo createInfo{};
 			createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+			createInfo.image = swapChainImages[i];
 			createInfo.image = swapChainImages[i];
 
 			createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
@@ -722,7 +723,7 @@ namespace mge {
 
 	// Create Graphics Pipeline
 
-	std::vector<char> MgeWindow::ReadFile(const std::string& filename)
+	std::vector<char> MgeEngine::ReadFile(const std::string& filename)
 	{
 		std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
@@ -744,7 +745,7 @@ namespace mge {
 
 	}
 
-	void MgeWindow::createRenderPass()
+	void MgeEngine::createRenderPass()
 	{
 		VkAttachmentDescription colorAttachment{};
 
@@ -794,7 +795,7 @@ namespace mge {
 
 	}
 
-	void MgeWindow::createGraphicsPipeline()
+	void MgeEngine::createGraphicsPipeline()
 	{
 		auto vertShaderCode = ReadFile(vertShaderFile);
 		auto fragShaderCode = ReadFile(fragShaderFile);
@@ -944,7 +945,7 @@ namespace mge {
 		vkDestroyShaderModule(device, vertShaderModule, nullptr);
 	}
 
-	void MgeWindow::createFrameBuffers()
+	void MgeEngine::createFrameBuffers()
 	{
 		swapChainFrameBuffers.resize(swapChainImageViews.size());
 
@@ -973,7 +974,7 @@ namespace mge {
 	}
 
 	// GPU
-	void MgeWindow::createCommandPool()
+	void MgeEngine::createCommandPool()
 	{
 		QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
 
@@ -987,7 +988,7 @@ namespace mge {
 		}
 	}
 
-	void MgeWindow::createVertexBuffer()
+	void MgeEngine::createVertexBuffer()
 	{
 		VkBufferCreateInfo bufferInfo{};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -1021,7 +1022,7 @@ namespace mge {
 		vkUnmapMemory(device, vertexBufferMemory);
 	}
 
-	unsigned int MgeWindow::findMemoryType(unsigned int typeFilter, VkMemoryPropertyFlags properties)
+	unsigned int MgeEngine::findMemoryType(unsigned int typeFilter, VkMemoryPropertyFlags properties)
 	{
 		VkPhysicalDeviceMemoryProperties memProperties;
 		vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
@@ -1037,7 +1038,7 @@ namespace mge {
 		throw std::runtime_error("Failed to find suitable memory type!");
 	}
 
-	void MgeWindow::createCommandBuffers()
+	void MgeEngine::createCommandBuffers()
 	{
 		commandBuffers.resize(swapChainFrameBuffers.size());
 
@@ -1094,7 +1095,7 @@ namespace mge {
 	}
 
 	
-	void MgeWindow::createSyncObjects()
+	void MgeEngine::createSyncObjects()
 	{
 		imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
 		renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
@@ -1120,7 +1121,7 @@ namespace mge {
 
 	}
 
-	void MgeWindow::drawFrame()
+	void MgeEngine::drawFrame()
 	{
 		vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
 
@@ -1204,7 +1205,7 @@ namespace mge {
 	
 	// end of GPU
 
-	VkShaderModule MgeWindow::createShaderModule(const std::vector<char>& code)
+	VkShaderModule MgeEngine::createShaderModule(const std::vector<char>& code)
 	{
 		VkShaderModuleCreateInfo createInfo{};
 
@@ -1225,7 +1226,7 @@ namespace mge {
 
 	// Other funcions
 
-	VKAPI_ATTR VkBool32 VKAPI_CALL MgeWindow::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+	VKAPI_ATTR VkBool32 VKAPI_CALL MgeEngine::debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 		VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallBackData, void* pUserData)
 	{
 		std::cerr << "Validation Layer : " << pCallBackData->pMessage << std::endl;
@@ -1233,7 +1234,7 @@ namespace mge {
 		return VK_FALSE;
 	};
 
-	int MgeWindow::rateDeviceSuitability(VkPhysicalDevice device) {
+	int MgeEngine::rateDeviceSuitability(VkPhysicalDevice device) {
 
 		VkPhysicalDeviceProperties deviceProperties;
 		VkPhysicalDeviceFeatures deviceFeatures;
@@ -1260,7 +1261,7 @@ namespace mge {
 
 	// Cleaning Up
 
-	void MgeWindow::cleanUpSwapChain()
+	void MgeEngine::cleanUpSwapChain()
 	{
 		for (auto frameBuffer : swapChainFrameBuffers)
 		{
@@ -1283,7 +1284,7 @@ namespace mge {
 		vkDestroySwapchainKHR(device, swapChain, nullptr);
 	}
 
-	void MgeWindow::cleanUp()
+	void MgeEngine::cleanUp()
 	{
 		cleanUpSwapChain();
 
@@ -1316,7 +1317,7 @@ namespace mge {
 
 	}
 
-	void MgeWindow::recreateSwapChain()
+	void MgeEngine::recreateSwapChain()
 	{
 		int width = 0, height = 0;
 		glfwGetFramebufferSize(mainWindow, &width, &height);
