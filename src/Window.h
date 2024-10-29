@@ -301,16 +301,34 @@ namespace mge {
 
 		const std::vector<Vertex> vertices =
 		{
-			{{ 0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-			{{ 0.5f,  0.5f}, {0.0f, 1.0f, 0.0f}},
+			{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+			{{ 0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+			{{ 0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}},
 			{{-0.5f,  0.5f}, {0.0f, 0.0f, 1.0f}}
+		};
+
+		/*
+		*    v0---v1
+		*    | \  |
+		*    |  \ |
+		*    v3--v2
+		* 
+		*  Drawing from 0->1->2->0->2->3->0
+	    */
+		const std::vector<unsigned short>  indices =
+		{
+			0, 1, 2, 2, 3, 0
 		};
 
 		// Vertex Buffer
 		VkBuffer vertexBuffer;
 		VkDeviceMemory vertexBufferMemory;
+		VkBuffer indexBuffer;
+		VkDeviceMemory indexBufferMemory;
 
 		void createVertexBuffer();
+		void createIndexBuffer();
+
 
 		unsigned int findMemoryType(unsigned int typeFilter, VkMemoryPropertyFlags properties);
 

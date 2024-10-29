@@ -49,11 +49,66 @@ namespace mge {
 		return EXIT_SUCCESS;
 	}
 
+	/*
+	* Framebuffer size
+	*
+	* While the size of a window is measured in screen coordinates, OpenGL works with pixels. 
+	* The size you pass into glViewport, for example, should be in pixels. On some machines screen coordinates 
+	* and pixels are the same, but on others they will not be. There is a second set of functions to retrieve 
+	* the size, in pixels, of the framebuffer of a window.
+	*
+	* If you wish to be notified when the framebuffer of a window is resized, whether by the user or the system, 
+	* set a size callback.
+	*
+	* glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+	* 
+	* The callback function receives the new size of the framebuffer when it is resized, which can for example be 
+	* used to update the OpenGL viewport.
+	* 
+	* void framebuffer_size_callback(GLFWwindow* window, int width, int height)
+	* {
+    *     glViewport(0, 0, width, height);
+	* }
+	* 
+	* There is also glfwGetFramebufferSize for directly retrieving the current size of the framebuffer of a window.
+	*
+	* int width, height;
+	* glfwGetFramebufferSize(window, &width, &height);
+	* glViewport(0, 0, width, height);
+	* 
+	* The size of a framebuffer may change independently of the size of a window, for example if the window is dragged 
+	* between a regular monitor and a high-DPI one.
+	*/
+
 	void MgeEngine::frameBufferResizeCallback( GLFWwindow *window, int width, int height)
 	{
 		auto app = reinterpret_cast<MgeEngine*>(glfwGetWindowUserPointer(window));
 		app->frameBufferResize = true;
 	}
+
+	void MgeEngine::mainLoop()
+	{
+
+		while (!getShouldClose())
+		{
+			glfwPollEvents();
+
+			drawFrame();
+		}
+
+		vkDeviceWaitIdle(device);  // Need to do this. Even after the while loop finished, the drawing could still going on.
+
+	}
+
+	void MgeEngine::run()
+	{
+		initWindow();
+		initVulkan();
+		mainLoop();
+		cleanUp();
+	}
+
+	// Vulkan Initialization
 
 	void MgeEngine::initVulkan()
 	{
@@ -82,34 +137,12 @@ namespace mge {
 
 		createVertexBuffer();
 
+		createIndexBuffer();
+
 		createCommandBuffers();
 
 		createSyncObjects();
 	}
-
-	void MgeEngine::mainLoop()
-	{
-
-		while (!getShouldClose())
-		{
-			glfwPollEvents();
-
-			drawFrame();
-		}
-
-		vkDeviceWaitIdle(device);  // Need to do this. Even after the while loop finished, the drawing could still going on.
-
-	}
-
-	void MgeEngine::run()
-	{
-		initWindow();
-		initVulkan();
-		mainLoop();
-		cleanUp();
-	}
-
-	// Vulkan Initialization
 
 	// Create Instance
 
@@ -1038,6 +1071,25 @@ namespace mge {
 
 	}
 
+	void MgeEngine::createIndexBuffer()
+	{
+		VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+		VkBuffer stagingBuffer;
+		VkDeviceMemory stagingBufferMemory;
+
+		createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer, stagingBufferMemory);
+
+		void* data;
+		vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+		memcpy(data, indices.data(), (unsigned long long)bufferSize);
+		vkUnmapMemory(device, stagingBufferMemory);
+		createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
+		copyBuffer(stagingBuffer, indexBuffer, bufferSize);
+		vkDestroyBuffer(device, stagingBuffer, nullptr);
+		vkFreeMemory(device, stagingBufferMemory, nullptr);
+
+	}
+
 	unsigned int MgeEngine::findMemoryType(unsigned int typeFilter, VkMemoryPropertyFlags properties)
 	{
 		VkPhysicalDeviceMemoryProperties memProperties;
@@ -1098,7 +1150,10 @@ namespace mge {
 			VkBuffer vertexBuffers[] = { vertexBuffer };
 			VkDeviceSize offsets[] = { 0 };
 			vkCmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffers, offsets);
-			vkCmdDraw(commandBuffers[i], static_cast<unsigned int>(vertices.size()), 1, 0, 0);
+			// vkCmdDraw(commandBuffers[i], static_cast<unsigned int>(vertices.size()), 1, 0, 0);
+
+			vkCmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+			vkCmdDrawIndexed(commandBuffers[i], static_cast<unsigned int>(indices.size()), 1, 0, 0, 0);
 
 			vkCmdEndRenderPass(commandBuffers[i]);
 
@@ -1334,6 +1389,9 @@ namespace mge {
 	void MgeEngine::cleanUp()
 	{
 		cleanUpSwapChain();
+
+		vkDestroyBuffer(device, indexBuffer, nullptr);
+		vkFreeMemory(device, indexBufferMemory, nullptr);
 
 		vkDestroyBuffer(device, vertexBuffer, nullptr);
 		vkFreeMemory(device, vertexBufferMemory, nullptr);
