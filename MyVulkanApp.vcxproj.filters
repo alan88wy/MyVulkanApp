@@ -43,5 +43,6 @@
     <None Include="shaders\Shader_v2.vert">
       <Filter>Shaders</Filter>
     </None>
+    <None Include="README.md" />
   </ItemGroup>
 </Project>

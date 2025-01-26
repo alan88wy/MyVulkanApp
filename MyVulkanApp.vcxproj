@@ -150,6 +150,7 @@
     <ClInclude Include="src\Window.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="README.md" />
     <None Include="shaders\shader_base.frag" />
     <None Include="shaders\Shader_base.vert" />
     <None Include="shaders\shader_v2.frag" />

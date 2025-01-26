@@ -36,3 +36,5 @@ Vendors
 *.exe
 *.out
 *.app
+
+.fake
